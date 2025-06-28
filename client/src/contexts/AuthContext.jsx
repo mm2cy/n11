@@ -39,18 +39,26 @@ export const AuthProvider = ({ children }) => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       })
       if (error) {
         if (error.message.includes('provider is not enabled')) {
-          toast.error('Google authentication is not configured. Please contact support or use email authentication.')
+          toast.error('Google authentication is not configured. Please use email authentication instead.')
+          return
+        }
+        if (error.message.includes('redirect_uri_mismatch')) {
+          toast.error('Google OAuth is not properly configured. Please use email authentication instead.')
           return
         }
         throw error
       }
     } catch (error) {
-      toast.error('Failed to sign in with Google')
+      toast.error('Failed to sign in with Google. Please use email authentication instead.')
       console.error('Error:', error)
     }
   }

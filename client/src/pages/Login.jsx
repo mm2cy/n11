@@ -67,7 +67,7 @@ const Login = () => {
                 </ul>
               </div>
 
-              {/* Email/Password Form */}
+              {/* Email/Password Form - Primary Method */}
               <form onSubmit={handleEmailAuth} className="space-y-4">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -99,7 +99,13 @@ const Login = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
                     placeholder="Enter your password"
+                    minLength={6}
                   />
+                  {isSignUp && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Password must be at least 6 characters long
+                    </p>
+                  )}
                 </div>
                 <button
                   type="submit"
@@ -110,16 +116,26 @@ const Login = () => {
                 </button>
               </form>
 
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-sm text-primary-600 hover:text-primary-500"
+                >
+                  {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+                </button>
+              </div>
+
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-300" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or</span>
+                  <span className="px-2 bg-white text-gray-500">Or try</span>
                 </div>
               </div>
 
-              {/* Google Sign In Button */}
+              {/* Google Sign In Button - Secondary Option */}
               <button
                 onClick={signInWithGoogle}
                 className="w-full flex justify-center items-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
@@ -132,16 +148,6 @@ const Login = () => {
                 </svg>
                 Continue with Google
               </button>
-
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => setIsSignUp(!isSignUp)}
-                  className="text-sm text-primary-600 hover:text-primary-500"
-                >
-                  {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-                </button>
-              </div>
 
               <p className="text-xs text-gray-500 text-center">
                 By signing in, you agree to our Terms of Service and Privacy Policy
