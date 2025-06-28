@@ -42,9 +42,43 @@ export const AuthProvider = ({ children }) => {
           redirectTo: `${window.location.origin}/dashboard`
         }
       })
-      if (error) throw error
+      if (error) {
+        if (error.message.includes('provider is not enabled')) {
+          toast.error('Google authentication is not configured. Please contact support or use email authentication.')
+          return
+        }
+        throw error
+      }
     } catch (error) {
       toast.error('Failed to sign in with Google')
+      console.error('Error:', error)
+    }
+  }
+
+  const signInWithEmail = async (email, password) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+      if (error) throw error
+      toast.success('Signed in successfully')
+    } catch (error) {
+      toast.error(error.message || 'Failed to sign in')
+      console.error('Error:', error)
+    }
+  }
+
+  const signUpWithEmail = async (email, password) => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password
+      })
+      if (error) throw error
+      toast.success('Account created successfully! Please check your email for verification.')
+    } catch (error) {
+      toast.error(error.message || 'Failed to create account')
       console.error('Error:', error)
     }
   }
@@ -64,6 +98,8 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
     signOut
   }
 

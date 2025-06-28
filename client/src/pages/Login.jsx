@@ -1,10 +1,14 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Video } from 'lucide-react'
 
 const Login = () => {
-  const { user, signInWithGoogle, loading } = useAuth()
+  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, loading } = useAuth()
+  const [isSignUp, setIsSignUp] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (loading) {
     return (
@@ -18,6 +22,22 @@ const Login = () => {
     return <Navigate to="/dashboard" replace />
   }
 
+  const handleEmailAuth = async (e) => {
+    e.preventDefault()
+    if (!email || !password) return
+
+    setIsSubmitting(true)
+    try {
+      if (isSignUp) {
+        await signUpWithEmail(email, password)
+      } else {
+        await signInWithEmail(email, password)
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -29,7 +49,7 @@ const Login = () => {
             Welcome to MultiTalk
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in to start creating amazing conversational videos
+            {isSignUp ? 'Create your account' : 'Sign in to your account'}
           </p>
         </div>
 
@@ -47,6 +67,59 @@ const Login = () => {
                 </ul>
               </div>
 
+              {/* Email/Password Form */}
+              <form onSubmit={handleEmailAuth} className="space-y-4">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                    Email address
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+                    placeholder="Enter your email"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autoComplete={isSignUp ? "new-password" : "current-password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+                    placeholder="Enter your password"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Please wait...' : (isSignUp ? 'Create Account' : 'Sign In')}
+                </button>
+              </form>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">Or</span>
+                </div>
+              </div>
+
+              {/* Google Sign In Button */}
               <button
                 onClick={signInWithGoogle}
                 className="w-full flex justify-center items-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
@@ -59,6 +132,16 @@ const Login = () => {
                 </svg>
                 Continue with Google
               </button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-sm text-primary-600 hover:text-primary-500"
+                >
+                  {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+                </button>
+              </div>
 
               <p className="text-xs text-gray-500 text-center">
                 By signing in, you agree to our Terms of Service and Privacy Policy
