@@ -3,22 +3,29 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useSubscription } from '../contexts/SubscriptionContext'
 import { supabase } from '../lib/supabase'
-import { Play, Plus, Calendar, Download } from 'lucide-react'
+import { Play, Plus, Calendar, Download, AlertCircle } from 'lucide-react'
 
 const Dashboard = () => {
   const { user } = useAuth()
-  const { credits, subscription, loading: subscriptionLoading } = useSubscription()
+  const { credits, subscription, loading: subscriptionLoading, error: subscriptionError } = useSubscription()
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     if (user && !subscriptionLoading) {
+      console.log('Dashboard: User and subscription loaded, fetching videos')
       fetchUserVideos()
     }
   }, [user, subscriptionLoading])
 
   const fetchUserVideos = async () => {
     try {
+      setLoading(true)
+      setError(null)
+      
+      console.log('Dashboard: Fetching videos for user:', user.id)
+      
       const { data, error } = await supabase
         .from('generated_videos')
         .select('*')
@@ -27,13 +34,15 @@ const Dashboard = () => {
 
       if (error) {
         console.error('Error fetching videos:', error)
-        // Don't throw error, just set empty array
+        setError(`Failed to load videos: ${error.message}`)
         setVideos([])
       } else {
+        console.log('Dashboard: Videos fetched successfully:', data?.length || 0, 'videos')
         setVideos(data || [])
       }
     } catch (error) {
-      console.error('Error fetching videos:', error)
+      console.error('Dashboard: Unexpected error fetching videos:', error)
+      setError('An unexpected error occurred while loading videos')
       setVideos([])
     } finally {
       setLoading(false)
@@ -64,10 +73,32 @@ const Dashboard = () => {
   }
 
   // Show loading state while subscription data is loading
-  if (subscriptionLoading || loading) {
+  if (subscriptionLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="loading-spinner"></div>
+        <div className="text-center">
+          <div className="loading-spinner mb-4"></div>
+          <p className="text-gray-600">Loading your account...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show error state if there's a subscription error
+  if (subscriptionError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to Load Account</h2>
+          <p className="text-gray-600 mb-4">{subscriptionError}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="btn-primary"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     )
   }
@@ -144,7 +175,24 @@ const Dashboard = () => {
           <h2 className="text-xl font-semibold text-gray-900">Recent Videos</h2>
         </div>
         
-        {videos.length === 0 ? (
+        {loading ? (
+          <div className="p-8 text-center">
+            <div className="loading-spinner mb-4"></div>
+            <p className="text-gray-600">Loading videos...</p>
+          </div>
+        ) : error ? (
+          <div className="p-8 text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Videos</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={fetchUserVideos} 
+              className="btn-primary"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : videos.length === 0 ? (
           <div className="p-8 text-center">
             <Play className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No videos yet</h3>
