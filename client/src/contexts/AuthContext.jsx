@@ -26,8 +26,19 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email)
         setUser(session?.user ?? null)
         setLoading(false)
+        
+        // Handle successful signup
+        if (event === 'SIGNED_UP' && session?.user) {
+          console.log('User signed up successfully:', session.user.email)
+        }
+        
+        // Handle successful signin
+        if (event === 'SIGNED_IN' && session?.user) {
+          console.log('User signed in successfully:', session.user.email)
+        }
       }
     )
 
@@ -65,29 +76,44 @@ export const AuthProvider = ({ children }) => {
 
   const signInWithEmail = async (email, password) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       })
       if (error) throw error
+      
+      console.log('Sign in successful:', data.user?.email)
       toast.success('Signed in successfully')
     } catch (error) {
+      console.error('Sign in error:', error)
       toast.error(error.message || 'Failed to sign in')
-      console.error('Error:', error)
+      throw error
     }
   }
 
   const signUpWithEmail = async (email, password) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
-        password
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`
+        }
       })
+      
       if (error) throw error
-      toast.success('Account created successfully! Please check your email for verification.')
+      
+      console.log('Sign up successful:', data.user?.email)
+      
+      if (data.user && !data.session) {
+        toast.success('Please check your email to verify your account before signing in.')
+      } else if (data.user && data.session) {
+        toast.success('Account created successfully! Welcome to MultiTalk.')
+      }
     } catch (error) {
+      console.error('Sign up error:', error)
       toast.error(error.message || 'Failed to create account')
-      console.error('Error:', error)
+      throw error
     }
   }
 

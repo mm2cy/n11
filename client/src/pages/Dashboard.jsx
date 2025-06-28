@@ -7,13 +7,15 @@ import { Play, Plus, Calendar, Download } from 'lucide-react'
 
 const Dashboard = () => {
   const { user } = useAuth()
-  const { credits, subscription } = useSubscription()
+  const { credits, subscription, loading: subscriptionLoading } = useSubscription()
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchUserVideos()
-  }, [user])
+    if (user && !subscriptionLoading) {
+      fetchUserVideos()
+    }
+  }, [user, subscriptionLoading])
 
   const fetchUserVideos = async () => {
     try {
@@ -23,10 +25,16 @@ const Dashboard = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      setVideos(data || [])
+      if (error) {
+        console.error('Error fetching videos:', error)
+        // Don't throw error, just set empty array
+        setVideos([])
+      } else {
+        setVideos(data || [])
+      }
     } catch (error) {
       console.error('Error fetching videos:', error)
+      setVideos([])
     } finally {
       setLoading(false)
     }
@@ -55,7 +63,8 @@ const Dashboard = () => {
     }
   }
 
-  if (loading) {
+  // Show loading state while subscription data is loading
+  if (subscriptionLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="loading-spinner"></div>
@@ -92,7 +101,7 @@ const Dashboard = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Current Plan</p>
-              <p className="text-2xl font-bold text-gray-900 capitalize">{subscription}</p>
+              <p className="text-2xl font-bold text-gray-900 capitalize">{subscription || 'Free'}</p>
             </div>
           </div>
         </div>

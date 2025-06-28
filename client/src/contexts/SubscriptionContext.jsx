@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useAuth } from './AuthContext'
 import { supabase } from '../lib/supabase'
+import toast from 'react-hot-toast'
 
 const SubscriptionContext = createContext({})
 
@@ -30,22 +31,19 @@ export const SubscriptionProvider = ({ children }) => {
 
   const fetchUserData = async () => {
     try {
-      // Fetch user profile with subscription and credits
+      setLoading(true)
+      
+      // First, try to fetch existing user profile
       const { data: profile, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
         .single()
 
-      if (error && error.code !== 'PGRST116') {
-        throw error
-      }
-
-      if (profile) {
-        setSubscription(profile.subscription_plan)
-        setCredits(profile.credits)
-      } else {
-        // Create new user profile with free trial credits
+      if (error && error.code === 'PGRST116') {
+        // User profile doesn't exist, create it
+        console.log('Creating new user profile for:', user.email)
+        
         const { data: newProfile, error: createError } = await supabase
           .from('user_profiles')
           .insert([
@@ -54,19 +52,41 @@ export const SubscriptionProvider = ({ children }) => {
               email: user.email,
               credits: 5, // Free trial credits
               subscription_plan: 'free',
-              created_at: new Date().toISOString()
+              subscription_status: 'active',
+              videos_generated: 0,
+              credits_used: 0,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             }
           ])
           .select()
           .single()
 
-        if (createError) throw createError
+        if (createError) {
+          console.error('Error creating user profile:', createError)
+          throw createError
+        }
 
+        console.log('User profile created successfully:', newProfile)
         setSubscription('free')
         setCredits(5)
+        toast.success('Welcome! You have 5 free credits to get started.')
+      } else if (error) {
+        console.error('Error fetching user profile:', error)
+        throw error
+      } else {
+        // User profile exists
+        console.log('User profile found:', profile)
+        setSubscription(profile.subscription_plan)
+        setCredits(profile.credits)
       }
     } catch (error) {
-      console.error('Error fetching user data:', error)
+      console.error('Error in fetchUserData:', error)
+      toast.error('Failed to load user data. Please try refreshing the page.')
+      
+      // Set default values to prevent blank page
+      setSubscription('free')
+      setCredits(0)
     } finally {
       setLoading(false)
     }
@@ -76,13 +96,17 @@ export const SubscriptionProvider = ({ children }) => {
     try {
       const { error } = await supabase
         .from('user_profiles')
-        .update({ credits: newCredits })
+        .update({ 
+          credits: newCredits,
+          updated_at: new Date().toISOString()
+        })
         .eq('user_id', user.id)
 
       if (error) throw error
       setCredits(newCredits)
     } catch (error) {
       console.error('Error updating credits:', error)
+      toast.error('Failed to update credits')
     }
   }
 
